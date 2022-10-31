@@ -1,0 +1,90 @@
+#version: '3'
+#services:
+#  zookeeper:
+#    image: wurstmeister/zookeeper
+#    ports:
+#      - "2181:2181"
+#    container_name: zookeeper
+#    networks:
+#      - redKafka
+#
+#  kafka:
+#    image: wurstmeister/kafka
+#    container_name: kafka
+#    ports:
+#      - "9092:9092"
+#    environment:
+#      KAFKA_ADVERTISED_HOST_NAME: localhost
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_CREATE_TOPIC: "topic1"
+#    networks:
+#      - redKafka
+#
+#networks:
+#  redKafka:
+#
+
+
+services:
+  KafkaConsumer: #Consumer
+    image: 12:0.0.1-SNAPSHOT
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      -  kafka
+    environment:
+      SPRING.PROFILES.ACTIVE: profileConsumer
+      SERVER.PORT: 8080
+      SPRING.KAFKA.BOOTSTRAP-SERVERS: kafka:29092
+    networks:
+      - redKafka
+
+  KafkaConsumer2: #Consumer2
+    image: 12:0.0.1-SNAPSHOT
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka
+    environment:
+      SPRING.PROFILES.ACTIVE: profileConsumer2
+      SERVER.PORT: 8081
+      SPRING.KAFKA.BOOTSTRAP-SERVERS: kafka:29092
+    networks:
+      - redKafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - redKafka
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+    networks:
+      - redKafka
+
+networks:
+  redKafka:
+    driver: bridge
